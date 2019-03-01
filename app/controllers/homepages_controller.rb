@@ -1,5 +1,4 @@
 class HomepagesController < ApplicationController
-	require 'google/api_client'
   def index
 
   end
@@ -8,16 +7,18 @@ class HomepagesController < ApplicationController
 		my_string = params[:search][:text].downcase
 		if my_string.include?("weather") || my_string.include?("погода")
 		  result = Search::SearchWeather.call(string: my_string)
-		  puts "in #{result.city} #{result.temperature.to_i} temperature"
-		else 
-			my_search_client = Google::APIClient.new
-			google_search = my_search_client.discovered_api('customsearch')
-			response = my_search_client.execute(
-			  google_search.cse.list, 'q' => 'your query'
-			)
-			status, headers, body = response
+		  @text = "in #{result.city} #{result.temperature.to_i} temperature"
+		else
+			result = Search::SearchWiki.call(string: my_string)
 
+			@text = "#{result.title} \n #{result.description}"
 		end
-		redirect_to root_path
+		if result.success?
+			respond_to do |format|
+	      format.html { redirect_to root_path, notice: 'find.' }
+	      format.json { render :index, status: :created, location: @text }
+	      format.js
+	    end
+    end
   end
 end
